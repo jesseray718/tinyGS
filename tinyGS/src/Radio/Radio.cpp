@@ -28,6 +28,7 @@
 //@estbhan
 //04/08/2023
 #include "../BitCode/BitCode.h"
+#include "../BitCode/ax100_mode5.h"
 
 #define CHECK_ERROR(errCode) if (errCode != RADIOLIB_ERR_NONE) { Log::console(PSTR("Radio failed, code %d\n Check that the configuration is valid for your board"), errCode);status.radio_error=errCode; return errCode; }
 
@@ -629,6 +630,28 @@ uint8_t Radio::listen()
         delete[] respFrame; // Clean up original respFrame before reassignment
         respFrame=salida;
       }
+
+      if (status.modeminfo.framing==10){ //framing=10 -> AX.100 Mode 5 (Golay + CCSDS-RS) new mode thanks to the work of OE6ISP
+        Log::consoleAsync(PSTR("Processing AX.100 Mode 5 frame..."));
+        uint8_t *ax100_out = new uint8_t[AX100_M5_MAX_OUT];
+        int ax100_len = 0;
+        ax100_mode5_info_t ax100_info;
+        int ax100_result = ax100_mode5_decode(respFrame, (int)respLen,
+                                              ax100_out, &ax100_len, &ax100_info);
+        if (ax100_result == 0 && ax100_len > 0) {
+          Log::consoleAsync(PSTR("AX.100 Mode5 OK: Golay_errs=%d RS_errs=%d frame_len=%d payload=%d"),
+            ax100_info.golay_errors, ax100_info.rs_errors,
+            ax100_info.frame_len, ax100_len);
+          delete[] respFrame;
+          respFrame = ax100_out;
+          respLen   = (size_t)ax100_len;
+        } else {
+          Log::consoleAsync(PSTR("AX.100 Mode5 decode failed (err=%d)"), ax100_result);
+          delete[] ax100_out;
+          frame_error = 1;
+        }
+      }
+
       board_t board;
       ConfigManager::getInstance().getBoardConfig(board);
       // check CRC by software if pckt is <65 bytes, of if it's bigger only for modules SX126x 
