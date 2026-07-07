@@ -656,7 +656,14 @@ int16_t RadioHal<LR2021>::begin(float freq, float bw, uint8_t sf, uint8_t cr, ui
     else if (bw <= 812.5f)    bw = 812.5f;
     else                      bw = 1000.0f;
 
-    return radio->begin(freq, bw, sf, cr, syncWord, power, preambleLength, tcxoVoltage);
+    int16_t state = radio->begin(freq, bw, sf, cr, syncWord, power, preambleLength, tcxoVoltage);
+    if (state != RADIOLIB_ERR_NONE) return state;
+    
+    // LR2021 does not have setGain(); use setRxBoostedGainMode instead
+    if (gain > 0) {
+        state = radio->setRxBoostedGainMode(true);
+    }
+    return state;
 }
 
 template<>
