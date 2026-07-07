@@ -33,6 +33,7 @@ public:
   virtual int16_t explicitHeader() = 0;
   virtual int16_t implicitHeader(size_t len) = 0;
   virtual int16_t setRxBoostedGainMode(bool enable) = 0;
+  virtual int16_t setGain(uint8_t gain) = 0;
 };
 
 
@@ -130,6 +131,7 @@ public:
 
   int16_t setWhitening(bool enabled, uint16_t initial);
   int16_t setRxBoostedGainMode(bool enable);
+  int16_t setGain(uint8_t gain);
 
 private:
   T* radio = nullptr;
